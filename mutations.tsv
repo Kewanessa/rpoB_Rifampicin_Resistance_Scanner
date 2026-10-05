@@ -1,0 +1,127 @@
+# rpoB rifampicin resistance mutation database
+# kewanessa
+# CS50 Final Project
+# M. tuberculosis numbering (H37Rv, Rv0667)
+# Columns: gene	codon	ref_aa	alt_aa	drug	confidence	source
+# Confidence = WHO 2023 grading group: 1=Associated with resistance,
+#   2=Associated with resistance - interim, 3=Uncertain significance,
+#   4=Not associated with resistance - interim, 5=Not associated with resistance
+# Source: WHO. Catalogue of mutations in Mycobacterium tuberculosis complex and
+#   their association with drug resistance, 2nd ed. Geneva: WHO; 2023.
+#   ISBN 9789240082410. Data licence: ODC-By 1.0.
+# Extracted from WHO-UCN-TB-2023.7-eng.xlsx (sheet Catalogue_master_file),
+#   https://github.com/GTB-tbsequencing/mutation-catalogue-2023
+#   by tools/extract_who_rpoB.py. Filter: drug=Rifampicin, gene=rpoB,
+#   effect=missense_variant, final grading group 1 or 2.
+#   Result: 103 mutations (23 in group 1, 80 in group 2).
+#   WHO-graded in-frame indels are not single-codon substitutions and are
+#   not listed; amr_scan reports every RRDR indel separately.
+# Notes in the source column: borderline = WHO 'borderline' mutation;
+#   RRDR rule = graded by WHO's RRDR additional grading criterion.
+# IMPORTANT: This uses M. tuberculosis numbering, NOT E. coli numbering.
+# E. coli S531 = M. tuberculosis S450, H526 = H445, D516 = D435, etc.
+# Ref AAs verified against H37Rv protein NP_215181.1 (1172 aa)
+gene	codon	ref_aa	alt_aa	drug	confidence	source
+rpoB	170	V	F	rifampicin	1	WHO 2023
+rpoB	426	G	S	rifampicin	2	WHO 2023; RRDR rule
+rpoB	427	T	A	rifampicin	2	WHO 2023; RRDR rule
+rpoB	427	T	G	rifampicin	2	WHO 2023; RRDR rule
+rpoB	427	T	I	rifampicin	2	WHO 2023; RRDR rule
+rpoB	427	T	N	rifampicin	2	WHO 2023; RRDR rule
+rpoB	427	T	P	rifampicin	2	WHO 2023; RRDR rule
+rpoB	427	T	S	rifampicin	2	WHO 2023; RRDR rule
+rpoB	428	S	G	rifampicin	2	WHO 2023; RRDR rule
+rpoB	428	S	I	rifampicin	2	WHO 2023; RRDR rule
+rpoB	428	S	R	rifampicin	2	WHO 2023; RRDR rule
+rpoB	428	S	T	rifampicin	2	WHO 2023; RRDR rule
+rpoB	429	Q	H	rifampicin	2	WHO 2023; RRDR rule
+rpoB	429	Q	L	rifampicin	2	WHO 2023; RRDR rule
+rpoB	429	Q	P	rifampicin	2	WHO 2023; RRDR rule
+rpoB	430	L	P	rifampicin	1	WHO 2023; borderline
+rpoB	430	L	R	rifampicin	2	WHO 2023; RRDR rule
+rpoB	431	S	G	rifampicin	2	WHO 2023; RRDR rule
+rpoB	431	S	N	rifampicin	2	WHO 2023; RRDR rule
+rpoB	431	S	R	rifampicin	2	WHO 2023; RRDR rule
+rpoB	431	S	T	rifampicin	2	WHO 2023; RRDR rule
+rpoB	432	Q	K	rifampicin	1	WHO 2023
+rpoB	432	Q	L	rifampicin	1	WHO 2023
+rpoB	432	Q	P	rifampicin	1	WHO 2023
+rpoB	432	Q	E	rifampicin	2	WHO 2023; RRDR rule
+rpoB	432	Q	H	rifampicin	2	WHO 2023; RRDR rule
+rpoB	432	Q	N	rifampicin	2	WHO 2023; RRDR rule
+rpoB	434	M	I	rifampicin	2	WHO 2023; RRDR rule
+rpoB	434	M	L	rifampicin	2	WHO 2023; RRDR rule
+rpoB	434	M	R	rifampicin	2	WHO 2023; RRDR rule
+rpoB	434	M	T	rifampicin	2	WHO 2023; RRDR rule
+rpoB	434	M	V	rifampicin	2	WHO 2023; RRDR rule
+rpoB	435	D	F	rifampicin	1	WHO 2023
+rpoB	435	D	V	rifampicin	1	WHO 2023
+rpoB	435	D	Y	rifampicin	1	WHO 2023
+rpoB	435	D	A	rifampicin	2	WHO 2023; RRDR rule
+rpoB	435	D	E	rifampicin	2	WHO 2023; RRDR rule
+rpoB	435	D	G	rifampicin	2	WHO 2023; RRDR rule
+rpoB	435	D	H	rifampicin	2	WHO 2023; RRDR rule
+rpoB	435	D	L	rifampicin	2	WHO 2023; RRDR rule
+rpoB	435	D	N	rifampicin	2	WHO 2023; RRDR rule
+rpoB	436	Q	N	rifampicin	2	WHO 2023; RRDR rule
+rpoB	436	Q	P	rifampicin	2	WHO 2023; RRDR rule
+rpoB	436	Q	R	rifampicin	2	WHO 2023; RRDR rule
+rpoB	437	N	D	rifampicin	2	WHO 2023; RRDR rule
+rpoB	437	N	H	rifampicin	2	WHO 2023; RRDR rule
+rpoB	437	N	I	rifampicin	2	WHO 2023; RRDR rule
+rpoB	437	N	S	rifampicin	2	WHO 2023; RRDR rule
+rpoB	437	N	Y	rifampicin	2	WHO 2023; RRDR rule
+rpoB	438	N	H	rifampicin	2	WHO 2023; RRDR rule
+rpoB	439	P	A	rifampicin	2	WHO 2023; RRDR rule
+rpoB	439	P	L	rifampicin	2	WHO 2023; RRDR rule
+rpoB	439	P	S	rifampicin	2	WHO 2023; RRDR rule
+rpoB	441	S	L	rifampicin	1	WHO 2023
+rpoB	441	S	Q	rifampicin	1	WHO 2023
+rpoB	441	S	A	rifampicin	2	WHO 2023; RRDR rule
+rpoB	441	S	K	rifampicin	2	WHO 2023; RRDR rule
+rpoB	441	S	M	rifampicin	2	WHO 2023; RRDR rule
+rpoB	441	S	V	rifampicin	2	WHO 2023; RRDR rule
+rpoB	441	S	W	rifampicin	2	WHO 2023; RRDR rule
+rpoB	442	G	E	rifampicin	2	WHO 2023; RRDR rule
+rpoB	443	L	F	rifampicin	2	WHO 2023; RRDR rule
+rpoB	443	L	S	rifampicin	2	WHO 2023; RRDR rule
+rpoB	443	L	W	rifampicin	2	WHO 2023; RRDR rule
+rpoB	444	T	I	rifampicin	2	WHO 2023; RRDR rule
+rpoB	444	T	P	rifampicin	2	WHO 2023; RRDR rule
+rpoB	444	T	S	rifampicin	2	WHO 2023; RRDR rule
+rpoB	445	H	C	rifampicin	1	WHO 2023
+rpoB	445	H	D	rifampicin	1	WHO 2023
+rpoB	445	H	L	rifampicin	1	WHO 2023
+rpoB	445	H	N	rifampicin	1	WHO 2023; borderline
+rpoB	445	H	R	rifampicin	1	WHO 2023
+rpoB	445	H	S	rifampicin	1	WHO 2023; borderline
+rpoB	445	H	Y	rifampicin	1	WHO 2023
+rpoB	445	H	F	rifampicin	2	WHO 2023; RRDR rule
+rpoB	445	H	G	rifampicin	2	WHO 2023; RRDR rule
+rpoB	445	H	P	rifampicin	2	WHO 2023; RRDR rule
+rpoB	445	H	Q	rifampicin	2	WHO 2023; RRDR rule
+rpoB	445	H	T	rifampicin	2	WHO 2023; RRDR rule
+rpoB	446	K	E	rifampicin	2	WHO 2023; RRDR rule
+rpoB	446	K	Q	rifampicin	2	WHO 2023; RRDR rule
+rpoB	446	K	R	rifampicin	2	WHO 2023; RRDR rule
+rpoB	446	K	T	rifampicin	2	WHO 2023; RRDR rule
+rpoB	448	R	K	rifampicin	2	WHO 2023; RRDR rule
+rpoB	448	R	L	rifampicin	2	WHO 2023; RRDR rule
+rpoB	448	R	Q	rifampicin	2	WHO 2023; RRDR rule
+rpoB	449	L	M	rifampicin	2	WHO 2023; RRDR rule
+rpoB	450	S	F	rifampicin	1	WHO 2023
+rpoB	450	S	L	rifampicin	1	WHO 2023
+rpoB	450	S	W	rifampicin	1	WHO 2023
+rpoB	450	S	Y	rifampicin	1	WHO 2023
+rpoB	450	S	A	rifampicin	2	WHO 2023; RRDR rule
+rpoB	450	S	C	rifampicin	2	WHO 2023; RRDR rule
+rpoB	450	S	G	rifampicin	2	WHO 2023; RRDR rule
+rpoB	450	S	M	rifampicin	2	WHO 2023; RRDR rule
+rpoB	450	S	Q	rifampicin	2	WHO 2023; ALL dataset only
+rpoB	450	S	V	rifampicin	2	WHO 2023; RRDR rule
+rpoB	451	A	G	rifampicin	2	WHO 2023; RRDR rule
+rpoB	451	A	V	rifampicin	2	WHO 2023; RRDR rule
+rpoB	452	L	P	rifampicin	1	WHO 2023
+rpoB	452	L	M	rifampicin	2	WHO 2023; RRDR rule
+rpoB	452	L	V	rifampicin	2	WHO 2023; RRDR rule
+rpoB	491	I	F	rifampicin	1	WHO 2023; borderline

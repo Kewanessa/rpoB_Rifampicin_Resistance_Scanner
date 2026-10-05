@@ -1,0 +1,3 @@
+# S450L written in E. coli numbering (S531L) - must trigger a warning
+gene	codon	ref_aa	alt_aa	drug	confidence	source
+rpoB	531	S	L	rifampicin	1	E. coli numbering

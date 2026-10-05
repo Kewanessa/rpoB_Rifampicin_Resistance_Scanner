@@ -1,0 +1,4 @@
+# Build output (recreate with 'make')
+*.o
+amr_scan
+amr_scan_asan
