@@ -18,7 +18,7 @@ OBJS = $(SRCS:.c=.o)
 
 # Default target: build the program
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) -lm
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
 
 # Compile each .c to .o
 %.o: %.c
@@ -52,11 +52,11 @@ asan: $(ASAN_TARGET)
 
 $(ASAN_TARGET): $(SRCS) $(HDRS)
 	$(CC) -Wall -Wextra -Werror -g -std=c11 -fsanitize=address,undefined \
-		-fno-sanitize-recover=all -o $(ASAN_TARGET) $(SRCS) -lm
+		-fno-sanitize-recover=all -o $(ASAN_TARGET) $(SRCS)
 
 # Run with Valgrind to check for memory leaks
 valgrind: $(TARGET)
 	valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 \
-		./$(TARGET) tests/test_S450L.fasta "ncbi data/ncbi_dataset/data/gene.fna" mutations.tsv
+		./$(TARGET) tests/test_S450L.fasta ncbi_data/ncbi_dataset/data/gene.fna mutations.tsv
 
 .PHONY: clean test asan valgrind

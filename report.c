@@ -9,7 +9,8 @@
  *      the DB, or any other amino acid change / in-frame indel in the RRDR
  *      (WHO 2023 "additional grading rule", see follows_rrdr_rule)
  *    - Category 2: Uncharacterized RRDR variant (nonsense or frameshift)
- *    - Category 3: Other non-synonymous variants and indels outside the RRDR
+ *    - Category 3: Other non-synonymous variants and indels outside the RRDR,
+ *      plus RRDR variants the DB grades "not associated" (WHO group 4-5)
  *    - Category 4: Synonymous (DNA changed but protein didn't)
  *    - Ambiguous codons: N or mixed base calls, amino acid unknown
  * 3. Overall verdict
@@ -68,6 +69,15 @@ static int has_resistance_entry(const Variant *v)
 }
 
 /**
+ * Return 1 if the database grades the variant "not associated with
+ * resistance" (WHO group 4-5).
+ */
+static int is_not_associated(const Variant *v)
+{
+    return v->db_hit != NULL && v->db_hit->confidence >= CONF_NOT_ASSOC_INT;
+}
+
+/**
  * WHO 2023 "additional grading rule" for rifampicin: any non-silent
  * RRDR mutation is assumed to confer resistance (group 2, interim)
  * unless there is evidence to the contrary. We apply it to amino acid
@@ -82,7 +92,7 @@ static int follows_rrdr_rule(const Variant *v)
         return 0;
     }
     // Evidence to the contrary: the database grades it "not associated"
-    if (v->db_hit != NULL && v->db_hit->confidence >= CONF_NOT_ASSOC_INT)
+    if (is_not_associated(v))
     {
         return 0;
     }
@@ -99,8 +109,9 @@ static int follows_rrdr_rule(const Variant *v)
 
 /**
  * Decide which report category a variant belongs to.
- * Only WHO groups 1-2 count as known resistance; a database entry
- * graded 3-5 is shown but the variant is treated like any other.
+ * Only WHO groups 1-2 count as known resistance. An RRDR variant the
+ * database grades "not associated" (groups 4-5) is not uncharacterized,
+ * so it is listed with the other non-synonymous variants.
  */
 static int category(const Variant *v)
 {
@@ -116,7 +127,7 @@ static int category(const Variant *v)
     {
         return CAT_KNOWN;
     }
-    return v->in_rrdr ? CAT_RRDR : CAT_OTHER;
+    return (v->in_rrdr && !is_not_associated(v)) ? CAT_RRDR : CAT_OTHER;
 }
 
 /**
@@ -371,8 +382,8 @@ void print_report(const ReportInfo *info, const VariantList *vl)
     }
     if (counts[CAT_RRDR] == 0) printf("  (none)\n");
 
-    // --- Section 3: Variants Outside RRDR ---
-    printf("\n--- OTHER NON-SYNONYMOUS VARIANTS (outside RRDR) ---\n");
+    // --- Section 3: Other Non-Synonymous Variants ---
+    printf("\n--- OTHER NON-SYNONYMOUS VARIANTS ---\n");
     for (int i = 0; i < vl->count; i++)
     {
         const Variant *v = &vl->variants[i];
@@ -387,7 +398,7 @@ void print_report(const ReportInfo *info, const VariantList *vl)
             {
                 printf(" (database: %s)", confidence_label(v->db_hit->confidence));
             }
-            printf("\n");
+            printf("%s\n", v->in_rrdr ? " (in RRDR)" : "");
         }
         else
         {

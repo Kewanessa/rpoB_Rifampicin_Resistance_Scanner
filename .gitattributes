@@ -1,0 +1,4 @@
+# Keep the test script runnable on any OS, and keep the CRLF test file
+# exactly as it is (it checks that Windows line endings are handled)
+*.sh text eol=lf
+tests/test_lowercase_crlf.fasta -text

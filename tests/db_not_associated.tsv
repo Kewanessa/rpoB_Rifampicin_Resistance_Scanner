@@ -1,0 +1,4 @@
+# H445Y graded "not associated with resistance" (WHO group 5): evidence
+# against the WHO RRDR rule, so the sample must not be called resistant
+gene	codon	ref_aa	alt_aa	drug	confidence	source
+rpoB	445	H	Y	rifampicin	5	test entry
