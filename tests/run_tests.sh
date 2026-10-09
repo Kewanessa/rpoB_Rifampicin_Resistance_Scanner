@@ -17,7 +17,7 @@
 cd "$(dirname "$0")/.." || exit 1
 
 PROG="${PROG:-./amr_scan}"
-REF="ncbi data/ncbi_dataset/data/gene.fna"
+REF="ncbi_data/ncbi_dataset/data/gene.fna"
 DB="mutations.tsv"
 TESTS_DIR="tests"
 PASS=0
@@ -246,6 +246,16 @@ run_test "Flanking DNA around the gene is ignored" \
     "Variants found:    0 total" \
     "Ignored 50 patient base(s)" \
     "!insertion"
+
+# A database that grades H445Y "not associated" (WHO group 5): that is
+# evidence against the RRDR rule, so H445Y is neither resistant nor unknown
+DB="$TESTS_DIR/db_not_associated.tsv"
+run_test "RRDR mutation graded 'not associated' in the database" \
+    "$TESTS_DIR/test_H445Y.fasta" "$NEGATIVE" \
+    "* H445Y (CAC -> TAC, c.1333C>T) (database: Not associated with resistance) (in RRDR)" \
+    "Known resistance: 0" \
+    "Unknown RRDR:     0"
+DB="mutations.tsv"
 
 run_test "Nonsense mutation in RRDR (S450*)" \
     "$TESTS_DIR/test_nonsense.fasta" "$UNCHARACTERIZED" \

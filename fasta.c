@@ -22,6 +22,7 @@
  */
 
 #include <ctype.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -235,6 +236,13 @@ FastaRecord *read_fasta(const char *filename)
         // We need room for this char + the null terminator
         if (seq_len + 1 >= capacity)
         {
+            // Doubling past INT_MAX would overflow (a file of over 1 GB)
+            if (capacity > INT_MAX / 2)
+            {
+                fprintf(stderr, "Error: sequence in '%s' is too long\n", filename);
+                abandon(fp, seq_buf, record);
+                return NULL;
+            }
             capacity *= 2;
             char *new_buf = realloc(seq_buf, capacity);
             if (new_buf == NULL)
