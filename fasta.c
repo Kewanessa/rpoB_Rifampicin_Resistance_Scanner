@@ -18,7 +18,6 @@
  *
  * kewanessa
  * CS50 Final Project
- * AI assistance: reviewed and revised with Anthropic Claude (Claude Code); see README.
  */
 
 #include <ctype.h>
@@ -51,9 +50,7 @@ int is_valid_base(char c)
     return 0;
 }
 
-/**
- * Complement of one base, including IUPAC ambiguity codes.
- */
+// Complement of one base, including IUPAC ambiguity codes.
 static char complement_base(char c)
 {
     switch (c)
@@ -89,9 +86,7 @@ char *reverse_complement(const char *seq, int len)
     return rc;
 }
 
-/**
- * Free everything read_fasta has allocated so far and close the file.
- */
+// Free everything read_fasta has allocated so far and close the file.
 static void abandon(FILE *fp, char *seq_buf, FastaRecord *record)
 {
     fclose(fp);
@@ -101,7 +96,7 @@ static void abandon(FILE *fp, char *seq_buf, FastaRecord *record)
 
 FastaRecord *read_fasta(const char *filename)
 {
-    // --- Step 1: Open the file ---
+    // Step 1: Open the file
     FILE *fp = fopen(filename, "r");
     if (fp == NULL)
     {
@@ -109,7 +104,7 @@ FastaRecord *read_fasta(const char *filename)
         return NULL;
     }
 
-    // --- Step 2: Allocate the record ---
+    // Step 2: Allocate the record
     FastaRecord *record = malloc(sizeof(FastaRecord));
     if (record == NULL)
     {
@@ -121,7 +116,7 @@ FastaRecord *read_fasta(const char *filename)
     record->sequence = NULL;
     record->length = 0;
 
-    // --- Step 3: Allocate the growing sequence buffer ---
+    // Step 3: Allocate the growing sequence buffer
     int capacity = INITIAL_CAPACITY;
     char *seq_buf = malloc(capacity);
     if (seq_buf == NULL)
@@ -132,7 +127,7 @@ FastaRecord *read_fasta(const char *filename)
     }
     int seq_len = 0;
 
-    // --- Step 4: Skip a UTF-8 byte order mark (EF BB BF), if any ---
+    // Step 4: Skip a UTF-8 byte order mark (EF BB BF), if any
     int c = fgetc(fp);
     if (c == 0xEF)
     {
@@ -150,7 +145,7 @@ FastaRecord *read_fasta(const char *filename)
         ungetc(c, fp);
     }
 
-    // --- Step 5: Read the file one character at a time ---
+    // Step 5: Read the file one character at a time
     char id[MAX_ID];
     int id_len = 0;
     int found_header = 0;  // Seen this record's '>' line
@@ -232,7 +227,7 @@ FastaRecord *read_fasta(const char *filename)
             return NULL;
         }
 
-        // --- Grow the buffer if needed (doubling strategy) ---
+        // Grow the buffer if needed (doubling strategy)
         // We need room for this char + the null terminator
         if (seq_len + 1 >= capacity)
         {
@@ -265,7 +260,7 @@ FastaRecord *read_fasta(const char *filename)
     }
     fclose(fp);
 
-    // --- Step 6: Validate what we got ---
+    // Step 6: Validate what we got
     if (seq_len == 0)
     {
         fprintf(stderr, "Error: no sequence data found in '%s'\n", filename);
@@ -307,7 +302,7 @@ FastaRecord *read_fasta(const char *filename)
     // Null-terminate the sequence
     seq_buf[seq_len] = '\0';
 
-    // --- Step 7: Package the result ---
+    // Step 7: Package the result
     record->sequence = seq_buf;
     record->length = seq_len;
 

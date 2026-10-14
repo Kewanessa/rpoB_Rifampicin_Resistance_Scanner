@@ -31,9 +31,7 @@ typedef struct
     int rrdr_resolved;         // RRDR bases (0-81) read as A, C, G or T
 } ReportInfo;
 
-/**
- * Print the full analysis report and the final verdict.
- */
+// Print the full analysis report and the final verdict.
 void print_report(const ReportInfo *info, const VariantList *vl);
 
 /**
@@ -43,9 +41,7 @@ void print_report(const ReportInfo *info, const VariantList *vl);
  */
 double calc_identity(const char *ref_aligned, const char *qry_aligned, int align_len);
 
-/**
- * Count alignment columns where a patient base sits on a reference base.
- */
+// Count alignment columns where a patient base sits on a reference base.
 int count_aligned_bases(const char *ref_aligned, const char *qry_aligned, int align_len);
 
 /**

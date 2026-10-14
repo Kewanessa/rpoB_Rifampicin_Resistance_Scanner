@@ -7,9 +7,7 @@
  *
  * kewanessa
  * CS50 Final Project
- * AI assistance: reviewed and revised with Anthropic Claude (Claude Code); see README.
  */
-
 #ifndef ALIGN_H
 #define ALIGN_H
 
@@ -44,19 +42,19 @@ typedef struct
  * kept contiguous and placed at their left-most equivalent position.
  * Refuses (returns NULL) if the DP grid would be unreasonably large.
  *
- * @param ref      Reference sequence string
- * @param ref_len  Length of the reference sequence
- * @param qry      Query sequence string
- * @param qry_len  Length of the query sequence
- * @return         Pointer to dynamically allocated AlignResult, or NULL on error.
- *                 Caller is responsible for freeing the result using free_align_result.
+ * ref      Reference sequence string
+ * ref_len  Length of the reference sequence
+ * qry      Query sequence string
+ * qry_len  Length of the query sequence
+ * return   Pointer to dynamically allocated AlignResult, or NULL on error.
+ *          Caller is responsible for freeing the result using free_align_result.
  */
 AlignResult *align_sequences(const char *ref, int ref_len, const char *qry, int qry_len);
 
 /**
  * Frees memory dynamically allocated for an AlignResult and its aligned strings.
  *
- * @param result   Pointer to AlignResult to free (safe to call with NULL).
+ * result   Pointer to AlignResult to free (safe to call with NULL).
  */
 void free_align_result(AlignResult *result);
 

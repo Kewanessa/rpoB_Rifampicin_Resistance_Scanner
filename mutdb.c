@@ -1,7 +1,7 @@
 /**
  * mutdb.c — Mutation database with hash table
  *
- * HOW THE HASH TABLE WORKS (CS50 week 5 concept):
+ * HOW THE HASH TABLE WORKS: 
  *
  * We want to look up mutations fast. Instead of searching through
  * a list every time, we use a hash table:
@@ -51,9 +51,7 @@ static unsigned int hash_mutation(int codon, char alt_aa)
     return h % HASH_TABLE_SIZE;
 }
 
-/**
- * Return 1 if c is a one-letter amino acid code or '*' (stop codon).
- */
+// Return 1 if c is a one-letter amino acid code or '*' (stop codon).
 static int is_amino_acid(char c)
 {
     return c != '\0' && strchr("ACDEFGHIKLMNPQRSTVWY*", c) != NULL;

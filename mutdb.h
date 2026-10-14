@@ -80,9 +80,7 @@ MutEntry *lookup_mutation(MutDB *db, int codon, char alt_aa);
  */
 int validate_mutdb(MutDB *db, const char *ref_protein, int protein_len);
 
-/**
- * Free all memory used by the mutation database.
- */
+// Free all memory used by the mutation database.
 void free_mutdb(MutDB *db);
 
 #endif // MUTDB_H

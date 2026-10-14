@@ -31,9 +31,7 @@ typedef struct
  */
 FastaRecord *read_fasta(const char *filename);
 
-/**
- * Free a FastaRecord and all its internal memory.
- */
+// Free a FastaRecord and all its internal memory.
 void free_fasta_record(FastaRecord *record);
 
 /**

@@ -51,9 +51,7 @@ static const char *confidence_label(int tier)
     }
 }
 
-/**
- * Return 1 if c is an unambiguous DNA base (A, C, G or T).
- */
+// Return 1 if c is an unambiguous DNA base (A, C, G or T).
 static int is_base(char c)
 {
     return c == 'A' || c == 'C' || c == 'G' || c == 'T';
@@ -319,7 +317,7 @@ void print_report(const ReportInfo *info, const VariantList *vl)
         }
     }
 
-    // --- Section 1: Known Resistance Mutations ---
+    // Section 1: Known Resistance Mutations
     printf("--- KNOWN RESISTANCE-ASSOCIATED MUTATIONS ---\n");
     for (int i = 0; i < vl->count; i++)
     {
@@ -354,7 +352,7 @@ void print_report(const ReportInfo *info, const VariantList *vl)
     }
     if (counts[CAT_KNOWN] == 0) printf("  (none)\n");
 
-    // --- Section 2: Uncharacterized RRDR Variants ---
+    // Section 2: Uncharacterized RRDR Variants
     printf("\n--- UNCHARACTERIZED RRDR VARIANTS ---\n");
     for (int i = 0; i < vl->count; i++)
     {
@@ -382,7 +380,7 @@ void print_report(const ReportInfo *info, const VariantList *vl)
     }
     if (counts[CAT_RRDR] == 0) printf("  (none)\n");
 
-    // --- Section 3: Other Non-Synonymous Variants ---
+    // Section 3: Other Non-Synonymous Variants
     printf("\n--- OTHER NON-SYNONYMOUS VARIANTS ---\n");
     for (int i = 0; i < vl->count; i++)
     {
@@ -408,7 +406,7 @@ void print_report(const ReportInfo *info, const VariantList *vl)
     }
     if (counts[CAT_OTHER] == 0) printf("  (none)\n");
 
-    // --- Section 4: Synonymous Mutations ---
+    // Section 4: Synonymous Mutations
     printf("\n--- SYNONYMOUS CHANGES ---\n");
     for (int i = 0; i < vl->count; i++)
     {
@@ -424,7 +422,7 @@ void print_report(const ReportInfo *info, const VariantList *vl)
     }
     if (counts[CAT_SYNONYMOUS] == 0) printf("  (none)\n");
 
-    // --- Section 5: Ambiguous Codons ---
+    // Section 5: Ambiguous Codons
     printf("\n--- AMBIGUOUS CODONS (N or mixed base calls) ---\n");
     for (int i = 0; i < vl->count; i++)
     {
@@ -438,7 +436,7 @@ void print_report(const ReportInfo *info, const VariantList *vl)
     }
     if (counts[CAT_AMBIGUOUS] == 0) printf("  (none)\n");
 
-    // --- Summary & Clinical Verdict ---
+    // Summary & Clinical Verdict
     printf("\n--- SUMMARY ---\n");
     printf("  Variants found:    %d total\n", vl->count);
     printf("    Known resistance: %d", counts[CAT_KNOWN]);

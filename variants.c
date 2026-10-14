@@ -52,9 +52,7 @@ static int add_variant(VariantList *vl, const Variant *v)
     return 0;
 }
 
-/**
- * qsort comparator: order variants by reference position, then by type.
- */
+// qsort comparator: order variants by reference position, then by type.
 static int compare_variants(const void *a, const void *b)
 {
     const Variant *va = a;
@@ -66,17 +64,13 @@ static int compare_variants(const void *a, const void *b)
     return (va->type > vb->type) - (va->type < vb->type);
 }
 
-/**
- * Return 1 if c is an unambiguous DNA base (A, C, G or T).
- */
+// Return 1 if c is an unambiguous DNA base (A, C, G or T).
 static int is_acgt(char c)
 {
     return c == 'A' || c == 'C' || c == 'G' || c == 'T';
 }
 
-/**
- * Return 1 if any codon from first_codon to last_codon lies in the RRDR.
- */
+// Return 1 if any codon from first_codon to last_codon lies in the RRDR.
 static int overlaps_rrdr(int first_codon, int last_codon)
 {
     return first_codon <= RRDR_END_CODON && last_codon >= RRDR_START_CODON;
@@ -84,7 +78,6 @@ static int overlaps_rrdr(int first_codon, int last_codon)
 
 /**
  * Record an insertion or deletion of len bases.
- *
  * ref_index: 0-based reference index of the first deleted base, or of
  *            the reference base just before an insertion
  * bases:     the deleted (reference) or inserted (patient) bases

@@ -95,9 +95,7 @@ static int is_complete_gene(const char *dna, int dna_len, const char *protein)
     return 1;
 }
 
-/**
- * Decide whether an alignment can be trusted (see MIN_IDENTITY_PCT).
- */
+// Decide whether an alignment can be trusted (see MIN_IDENTITY_PCT).
 static int alignment_is_reliable(double identity, int aligned_bases, int patient_len)
 {
     int needed = MIN_ALIGNED_BASES;
@@ -150,9 +148,7 @@ int main(int argc, char *argv[])
     const char *reference_file = argv[2];
     const char *mutations_file = argv[3];
 
-    // ============================================================
     // Step 1: Parse the FASTA files
-    // ============================================================
     printf("Reading patient sequence from '%s'...\n", patient_file);
     FastaRecord *patient = read_fasta(patient_file);
     if (patient == NULL)
@@ -170,9 +166,7 @@ int main(int argc, char *argv[])
     }
     printf("  → ID: %s\n  → Length: %d bp\n", reference->id, reference->length);
 
-    // ============================================================
     // Step 2: Translate the reference to protein (for DB validation)
-    // ============================================================
     printf("Translating reference to protein...\n");
     char *ref_protein = translate_sequence(reference->sequence, reference->length);
     if (ref_protein == NULL)
@@ -201,9 +195,7 @@ int main(int argc, char *argv[])
 
     printf("  → Protein length: %d aa\n", protein_len);
 
-    // ============================================================
     // Step 3: Load and validate the mutation database
-    // ============================================================
     printf("Loading mutation database from '%s'...\n", mutations_file);
     MutDB *db = load_mutdb(mutations_file);
     if (db == NULL)
@@ -230,9 +222,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // ============================================================
     // Step 4: Align the sequences
-    // ============================================================
     printf("Aligning sequences (%d bp vs %d bp)...\n",
            patient->length, reference->length);
     printf("  (this may take a moment for full-length genes)\n");
@@ -288,9 +278,7 @@ int main(int argc, char *argv[])
 
     printf("  → Alignment length: %d columns, score: %d\n", aln->length, aln->score);
 
-    // ============================================================
     // Step 5: Call variants
-    // ============================================================
     printf("Calling variants...\n");
     VariantList *variants = call_variants(aln->ref_aligned, aln->qry_aligned, aln->length, db);
     if (variants == NULL)
@@ -304,9 +292,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // ============================================================
     // Step 6: Print the report
-    // ============================================================
     ReportInfo info;
     info.sample_id = patient->id;
     info.ref_id = reference->id;
@@ -318,9 +304,7 @@ int main(int argc, char *argv[])
     info.rrdr_resolved = count_rrdr_resolved(aln->ref_aligned, aln->qry_aligned, aln->length);
     print_report(&info, variants);
 
-    // ============================================================
     // Step 7: Clean up all memory
-    // ============================================================
     free(ref_protein);
     free_variant_list(variants);
     free_align_result(aln);

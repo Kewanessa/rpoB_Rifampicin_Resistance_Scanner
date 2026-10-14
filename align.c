@@ -1,12 +1,7 @@
 /**
  * align.c — Needleman-Wunsch sequence alignment
  *
- * THE BIG IDEA:
- * You have two DNA strings (reference and patient). They might differ
- * in length, have insertions or deletions, or start at different points.
- * You can't just compare them position-by-position.
- *
- * The Needleman-Wunsch algorithm finds the BEST way to line them up
+ * The Needleman-Wunsch algorithm finds the best way to line them up
  * by building a 2D grid (a "dynamic programming matrix").
  *
  * HOW THE GRID WORKS (tiny example):
@@ -32,9 +27,9 @@
  *   (free end gaps), so a short patient sequence won't be penalized
  *   for not covering the whole reference.
  *
- * MEMORY NOTE:
+ * MEMORY_NOTE:
  *   For 3.5kb × 3.5kb sequences, the grid has ~12 million cells.
- *   That MUST go on the heap (malloc), not the stack.
+ *   That must go on the heap (malloc), not the stack.
  *   We store it as one flat array, indexed as [i * (qry_len+1) + j].
  *   Indexes are computed with size_t so they cannot overflow, and
  *   MAX_CELLS stops us from trying to build an absurdly large grid.
@@ -42,7 +37,7 @@
  * TRACEBACK:
  *   After filling the grid, we follow arrows backward from the best
  *   end cell to reconstruct the alignment. A cell can often be reached
- *   equally well from more than one direction, so we store EVERY optimal
+ *   equally well from more than one direction, so we store every optimal
  *   direction as a bit flag (DIAG, UP, LEFT) in a separate 1-byte array.
  *
  *   When walking back we keep extending a gap that is already open
@@ -61,7 +56,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "align.h"
 
 // Direction bit flags for traceback (several can be set in one cell)
@@ -73,9 +67,7 @@
 // Enough for the 3,519 bp reference against a ~14 kb patient sequence.
 #define MAX_CELLS 50000000UL
 
-/**
- * Return the maximum of three integers.
- */
+// Return the maximum of three integers.
 static int max3(int a, int b, int c)
 {
     int max = a;
@@ -96,7 +88,7 @@ AlignResult *align_sequences(const char *ref, int ref_len, const char *qry, int 
     size_t rows = (size_t) ref_len + 1;
     size_t cols = (size_t) qry_len + 1;
 
-    // --- Refuse grids that would use too much memory ---
+    // Refuse grids that would use too much memory
     size_t total_cells = rows * cols;
     if (total_cells > MAX_CELLS)
     {
@@ -106,7 +98,7 @@ AlignResult *align_sequences(const char *ref, int ref_len, const char *qry, int 
         return NULL;
     }
 
-    // --- Allocate the score matrix (one flat block on the heap) ---
+    // Allocate the score matrix (one flat block on the heap)
     int *score = malloc(total_cells * sizeof(int));
     if (score == NULL)
     {
@@ -124,7 +116,7 @@ AlignResult *align_sequences(const char *ref, int ref_len, const char *qry, int 
         return NULL;
     }
 
-    // --- Initialize first row and column ---
+    // Initialize first row and column
     // Semi-global: first row = 0 (free end gaps for query start)
     // First column = 0 (free end gaps for reference start)
     for (size_t j = 0; j < cols; j++)
@@ -139,7 +131,7 @@ AlignResult *align_sequences(const char *ref, int ref_len, const char *qry, int 
     }
     trace[0] = 0; // Origin cell
 
-    // --- Fill the matrix ---
+    // Fill the matrix
     for (size_t i = 1; i < rows; i++)
     {
         for (size_t j = 1; j < cols; j++)
@@ -166,7 +158,7 @@ AlignResult *align_sequences(const char *ref, int ref_len, const char *qry, int 
         }
     }
 
-    // --- Find the best endpoint (semi-global) ---
+    // Find the best endpoint (semi-global)
     // Check last row (reference fully consumed) and last column (query fully consumed)
     size_t best_i = rows - 1;
     size_t best_j = cols - 1;
@@ -193,7 +185,7 @@ AlignResult *align_sequences(const char *ref, int ref_len, const char *qry, int 
         }
     }
 
-    // --- Traceback ---
+    // Traceback
     // Build the alignment in reverse, then flip it
     // Maximum possible alignment length = ref_len + qry_len
     size_t max_align = (size_t) ref_len + (size_t) qry_len;
@@ -292,7 +284,7 @@ AlignResult *align_sequences(const char *ref, int ref_len, const char *qry, int 
         prev = dir;
     }
 
-    // --- Reverse the alignment (we built it backward) ---
+    // Reverse the alignment (we built it backward)
     for (size_t k = 0; k < aln_len / 2; k++)
     {
         char tmp;
@@ -308,7 +300,7 @@ AlignResult *align_sequences(const char *ref, int ref_len, const char *qry, int 
     free(score);
     free(trace);
 
-    // --- Package the result ---
+    // Package the result
     AlignResult *result = malloc(sizeof(AlignResult));
     if (result == NULL)
     {
