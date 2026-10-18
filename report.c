@@ -1,10 +1,12 @@
 /**
  * report.c — Report generation and classification
  *
- * THE REPORT STRUCTURE:
- * 1. Header: sample ID, reference, strand, alignment identity %,
- *    aligned bases, sequenced span, RRDR coverage
- * 2. Variants sorted into categories (each variant lands in exactly one):
+ * THE REPORT STRUCTURE (each part has a heading and a rule, see ui.h):
+ * 1. Sample: sample ID, reference, strand
+ *    Alignment & coverage: identity %, aligned bases, sequenced span,
+ *    RRDR coverage
+ * 2. Variants sorted into categories (each variant lands in exactly one).
+ *    Each category is a section whose heading shows how many it holds:
  *    - Category 1: Known resistance-associated: a WHO group 1-2 entry in
  *      the DB, or any other amino acid change / in-frame indel in the RRDR
  *      (WHO 2023 "additional grading rule", see follows_rrdr_rule)
@@ -13,8 +15,10 @@
  *      plus RRDR variants the DB grades "not associated" (WHO group 4-5)
  *    - Category 4: Synonymous (DNA changed but protein didn't)
  *    - Ambiguous codons: N or mixed base calls, amino acid unknown
- * 3. Overall verdict
- * 4. Disclaimer
+ * 3. Summary counts and QC warnings
+ * 4. Overall verdict, framed and coloured (red = resistance, yellow =
+ *    needs a closer look, green = no known resistance)
+ * 5. Disclaimer
  *
  * THE VERDICT LOGIC (the first rule that applies wins):
  * - Poor alignment → "Inconclusive, sample does not align well to rpoB"
@@ -27,9 +31,11 @@
  * CS50 Final Project
  * AI assistance: reviewed and revised with Anthropic Claude (Claude Code); see README.
  */
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include "report.h"
+#include "ui.h"
 
 // Report categories (see above)
 #define CAT_KNOWN      1
@@ -161,20 +167,20 @@ static void print_dna_change(const Variant *v)
 }
 
 /**
- * Print the start of a line describing a codon substitution, e.g.
- * "  * S450L (TCG -> TTG, c.1349C>T)"
+ * Print a codon substitution (without a newline), e.g.
+ * "S450L (TCG -> TTG, c.1349C>T)"
  */
 static void print_substitution(const Variant *v)
 {
-    printf("  * %c%d%c (%s -> %s, ", v->ref_aa, v->codon_num, v->alt_aa,
+    printf("%c%d%c (%s -> %s, ", v->ref_aa, v->codon_num, v->alt_aa,
            v->ref_codon, v->alt_codon);
     print_dna_change(v);
     printf(")");
 }
 
 /**
- * Print the start of a line describing an insertion or deletion, e.g.
- * "  * In-frame deletion at codon 435: c.1303_1305delGAC (3 bp)"
+ * Print an insertion or deletion (without a newline), e.g.
+ * "In-frame deletion at codon 435: c.1303_1305delGAC (3 bp)"
  * Positions are 1-based within the rpoB gene (c. = coding DNA).
  */
 static void print_indel(const Variant *v)
@@ -182,7 +188,7 @@ static void print_indel(const Variant *v)
     const char *frame = v->is_frameshift ? "Frameshift" : "In-frame";
     if (v->type == VAR_DELETION)
     {
-        printf("  * %s deletion at codon %d: c.%d", frame, v->codon_num, v->nuc_pos);
+        printf("%s deletion at codon %d: c.%d", frame, v->codon_num, v->nuc_pos);
         if (v->indel_len > 1)
         {
             printf("_%d", v->nuc_pos + v->indel_len - 1);
@@ -191,9 +197,109 @@ static void print_indel(const Variant *v)
     }
     else
     {
-        printf("  * %s insertion at codon %d: c.%d_%dins%s (%d bp)",
+        printf("%s insertion at codon %d: c.%d_%dins%s (%d bp)",
                frame, v->codon_num, v->nuc_pos, v->nuc_pos + 1, v->indel_seq, v->indel_len);
     }
+}
+
+// Colour of a category: red = resistance, yellow = needs a closer look
+static const char *category_color(int cat)
+{
+    switch (cat)
+    {
+        case CAT_KNOWN:     return ui.red;
+        case CAT_RRDR:      return ui.yellow;
+        case CAT_AMBIGUOUS: return ui.yellow;
+        default:            return "";
+    }
+}
+
+// Print the bullet that starts a variant line, in its category's colour
+static void print_bullet(int cat)
+{
+    printf("    %s•%s ", category_color(cat), ui.reset);
+}
+
+/**
+ * Start a variant entry that takes several lines: a blank line between
+ * it and the entry above, so each one stands apart, then its bullet.
+ * 'shown' counts the entries printed so far in this section.
+ */
+static void start_entry(int cat, int *shown)
+{
+    if (*shown > 0)
+    {
+        printf("\n");
+    }
+    (*shown)++;
+    print_bullet(cat);
+}
+
+/**
+ * Print a line under a variant (its interpretation, source...),
+ * indented below the variant name and wrapped to the page width.
+ * 'style' is a ui colour, or "" for plain text.
+ */
+static void print_detail(const char *style, const char *format, ...) UI_PRINTF(2, 3);
+
+static void print_detail(const char *style, const char *format, ...)
+{
+    char text[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(text, sizeof(text), format, args);
+    va_end(args);
+
+    printf("      %s", style);
+    ui_wrap(text, 6);
+    printf("%s", ui.reset);
+}
+
+// Shown in a section that has no variants
+static void print_none(void)
+{
+    printf("    %sNone found%s\n", ui.dim, ui.reset);
+}
+
+/**
+ * Print a highlighted warning after a blank line, e.g.
+ * "QC WARNING: 1 frameshift/premature stop variant(s)..."
+ * Long text wraps and lines up after the label.
+ */
+static void print_warning(const char *label, const char *format, ...) UI_PRINTF(2, 3);
+
+static void print_warning(const char *label, const char *format, ...)
+{
+    char text[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(text, sizeof(text), format, args);
+    va_end(args);
+
+    printf("\n    %s%s%s%s ", ui.bold, ui.yellow, label, ui.reset);
+    ui_wrap(text, 4 + (int) strlen(label) + 1);
+}
+
+/**
+ * Print one row of the summary counts, e.g. "Known resistance: 1".
+ * A non-zero count stands out in 'color'; zero is dimmed. 'note' is
+ * printed after the count unless it is "".
+ */
+static void print_count(const char *label, int count, const char *color, const char *note)
+{
+    if (count > 0)
+    {
+        printf("      %-18s%s%s%d%s", label, ui.bold, color, count, ui.reset);
+    }
+    else
+    {
+        printf("      %-18s%s%d%s", label, ui.dim, count, ui.reset);
+    }
+    if (note[0] != '\0')
+    {
+        printf("  %s", note);
+    }
+    printf("\n");
 }
 
 double calc_identity(const char *ref_aligned, const char *qry_aligned, int align_len)
@@ -261,37 +367,44 @@ int count_rrdr_resolved(const char *ref_aligned, const char *qry_aligned, int al
 
 void print_report(const ReportInfo *info, const VariantList *vl)
 {
-    printf("\n========================================================\n");
-    printf("  rpoB Rifampicin Resistance Scan Report\n");
-    printf("========================================================\n");
-    printf("  Sample:         %s\n", info->sample_id);
-    printf("  Reference:      %s\n", info->ref_id);
-    printf("  Strand:         %s\n",
-           info->reverse_complemented ? "reverse complement (auto-detected)" : "forward");
-    printf("  Identity:       %.2f%%\n", info->identity_pct);
-    printf("  Aligned:        %d of %d patient bases\n", info->aligned_bases, info->patient_length);
+    // Title, set apart from the progress log above it
+    printf("\n\n");
+    ui_rule("═", "");
+    printf("  %srpoB Rifampicin Resistance Scan Report%s\n", ui.bold, ui.reset);
+    ui_rule("═", "");
+
+    ui_heading("SAMPLE", -1, "");
+    ui_field("Sample:", "%s", info->sample_id);
+    ui_field("Reference:", "%s", info->ref_id);
+    ui_field("Strand:", "%s",
+             info->reverse_complemented ? "reverse complement (auto-detected)" : "forward");
+
+    ui_heading("ALIGNMENT & COVERAGE", -1, "");
+    ui_field("Identity:", "%.2f%%", info->identity_pct);
+    ui_field("Aligned:", "%d of %d patient bases", info->aligned_bases, info->patient_length);
     if (vl->cov_start_pos > 0)
     {
-        printf("  Sequenced Span: bp %d - %d\n", vl->cov_start_pos, vl->cov_end_pos);
+        ui_field("Sequenced Span:", "bp %d - %d", vl->cov_start_pos, vl->cov_end_pos);
     }
     else
     {
-        printf("  Sequenced Span: none\n");
+        ui_field("Sequenced Span:", "none");
     }
     if (info->rrdr_resolved == RRDR_LENGTH_BP)
     {
-        printf("  RRDR Coverage:  Complete (%d/%d bp)\n", info->rrdr_resolved, RRDR_LENGTH_BP);
+        ui_field("RRDR Coverage:", "%sComplete%s (%d/%d bp)", ui.green, ui.reset,
+                 info->rrdr_resolved, RRDR_LENGTH_BP);
     }
     else
     {
-        printf("  RRDR Coverage:  INCOMPLETE (%d/%d bp resolved)\n",
-               info->rrdr_resolved, RRDR_LENGTH_BP);
+        ui_field("RRDR Coverage:", "%sINCOMPLETE%s (%d/%d bp resolved)", ui.yellow, ui.reset,
+                 info->rrdr_resolved, RRDR_LENGTH_BP);
     }
     if (!info->alignment_ok)
     {
-        printf("  WARNING:        low identity or few aligned bases - is this M. tuberculosis rpoB?\n");
+        print_warning("WARNING:",
+                      "low identity or few aligned bases -\nis this M. tuberculosis rpoB?");
     }
-    printf("========================================================\n\n");
 
     // Count of variants in each category (index = category number)
     int counts[CAT_AMBIGUOUS + 1] = {0};
@@ -317,8 +430,11 @@ void print_report(const ReportInfo *info, const VariantList *vl)
         }
     }
 
+    // Entries printed so far in the current section
+    int shown = 0;
+
     // Section 1: Known Resistance Mutations
-    printf("--- KNOWN RESISTANCE-ASSOCIATED MUTATIONS ---\n");
+    ui_heading("KNOWN RESISTANCE-ASSOCIATED MUTATIONS", counts[CAT_KNOWN], ui.red);
     for (int i = 0; i < vl->count; i++)
     {
         const Variant *v = &vl->variants[i];
@@ -326,14 +442,16 @@ void print_report(const ReportInfo *info, const VariantList *vl)
         {
             continue;
         }
+        start_entry(CAT_KNOWN, &shown);
         if (has_resistance_entry(v))
         {
             print_substitution(v);
-            printf(" - %s%s\n", confidence_label(v->db_hit->confidence),
-                   v->in_rrdr ? "" : " (outside RRDR)");
+            printf("\n");
+            print_detail("", "%s%s", confidence_label(v->db_hit->confidence),
+                         v->in_rrdr ? "" : " (outside RRDR)");
             if (v->db_hit->source[0] != '\0')
             {
-                printf("    Source: %s\n", v->db_hit->source);
+                print_detail(ui.dim, "Source: %s", v->db_hit->source);
             }
         }
         else
@@ -346,14 +464,17 @@ void print_report(const ReportInfo *info, const VariantList *vl)
             {
                 print_indel(v);
             }
-            printf(" - %s\n", confidence_label(CONF_ASSOC_W_R_INT));
-            printf("    Source: WHO 2023 additional grading rule (non-silent RRDR mutation)\n");
+            printf("\n");
+            print_detail("", "%s", confidence_label(CONF_ASSOC_W_R_INT));
+            print_detail(ui.dim,
+                         "Source: WHO 2023 additional grading rule (non-silent RRDR mutation)");
         }
     }
-    if (counts[CAT_KNOWN] == 0) printf("  (none)\n");
+    if (counts[CAT_KNOWN] == 0) print_none();
 
     // Section 2: Uncharacterized RRDR Variants
-    printf("\n--- UNCHARACTERIZED RRDR VARIANTS ---\n");
+    ui_heading("UNCHARACTERIZED RRDR VARIANTS", counts[CAT_RRDR], ui.yellow);
+    shown = 0;
     for (int i = 0; i < vl->count; i++)
     {
         const Variant *v = &vl->variants[i];
@@ -361,27 +482,34 @@ void print_report(const ReportInfo *info, const VariantList *vl)
         {
             continue;
         }
+        start_entry(CAT_RRDR, &shown);
         if (v->type == VAR_SNP)
         {
             print_substitution(v);
-            printf(" - significance unknown");
+            printf("\n");
             if (v->db_hit != NULL)
             {
-                printf(" (database: %s)", confidence_label(v->db_hit->confidence));
+                print_detail("", "Significance unknown (database: %s)",
+                             confidence_label(v->db_hit->confidence));
             }
-            printf("\n");
+            else
+            {
+                print_detail("", "Significance unknown");
+            }
         }
         else
         {
             print_indel(v);
-            printf(" - significance unknown%s\n",
-                   v->is_frameshift ? ", reading frame disrupted" : "");
+            printf("\n");
+            print_detail("", "Significance unknown%s",
+                         v->is_frameshift ? ", reading frame disrupted" : "");
         }
     }
-    if (counts[CAT_RRDR] == 0) printf("  (none)\n");
+    if (counts[CAT_RRDR] == 0) print_none();
 
-    // Section 3: Other Non-Synonymous Variants
-    printf("\n--- OTHER NON-SYNONYMOUS VARIANTS ---\n");
+    // Section 3: Other Non-Synonymous Variants (mostly one line each and
+    // there can be many, so no blank lines between them)
+    ui_heading("OTHER NON-SYNONYMOUS VARIANTS", counts[CAT_OTHER], "");
     for (int i = 0; i < vl->count; i++)
     {
         const Variant *v = &vl->variants[i];
@@ -389,105 +517,127 @@ void print_report(const ReportInfo *info, const VariantList *vl)
         {
             continue;
         }
+        print_bullet(CAT_OTHER);
         if (v->type == VAR_SNP)
         {
             print_substitution(v);
+            printf("%s\n", v->in_rrdr ? " (in RRDR)" : "");
             if (v->db_hit != NULL)
             {
-                printf(" (database: %s)", confidence_label(v->db_hit->confidence));
+                print_detail("", "Database: %s", confidence_label(v->db_hit->confidence));
             }
-            printf("%s\n", v->in_rrdr ? " (in RRDR)" : "");
         }
         else
         {
             print_indel(v);
-            printf("%s\n", v->is_frameshift ? " - reading frame disrupted" : "");
+            printf("\n");
+            if (v->is_frameshift)
+            {
+                print_detail("", "Reading frame disrupted");
+            }
         }
     }
-    if (counts[CAT_OTHER] == 0) printf("  (none)\n");
+    if (counts[CAT_OTHER] == 0) print_none();
 
-    // Section 4: Synonymous Mutations
-    printf("\n--- SYNONYMOUS CHANGES ---\n");
+    // Section 4: Synonymous Mutations (one line each, so no blank lines between)
+    ui_heading("SYNONYMOUS CHANGES", counts[CAT_SYNONYMOUS], "");
     for (int i = 0; i < vl->count; i++)
     {
         const Variant *v = &vl->variants[i];
         if (category(v) == CAT_SYNONYMOUS)
         {
-            printf("  * ");
+            print_bullet(CAT_SYNONYMOUS);
             print_dna_change(v);
             printf(" (codon %d %s -> %s, aa=%c unchanged)%s\n",
                    v->codon_num, v->ref_codon, v->alt_codon, v->ref_aa,
                    v->in_rrdr ? " (in RRDR)" : "");
         }
     }
-    if (counts[CAT_SYNONYMOUS] == 0) printf("  (none)\n");
+    if (counts[CAT_SYNONYMOUS] == 0) print_none();
 
-    // Section 5: Ambiguous Codons
-    printf("\n--- AMBIGUOUS CODONS (N or mixed base calls) ---\n");
+    // Section 5: Ambiguous Codons (one line each; a sample with many Ns has many)
+    ui_heading("AMBIGUOUS CODONS (N or mixed base calls, amino acid unknown)",
+               counts[CAT_AMBIGUOUS], ui.yellow);
     for (int i = 0; i < vl->count; i++)
     {
         const Variant *v = &vl->variants[i];
         if (category(v) == CAT_AMBIGUOUS)
         {
-            printf("  * codon %d (%s -> %s, ", v->codon_num, v->ref_codon, v->alt_codon);
+            print_bullet(CAT_AMBIGUOUS);
+            printf("codon %d (%s -> %s, ", v->codon_num, v->ref_codon, v->alt_codon);
             print_dna_change(v);
-            printf(") - amino acid cannot be determined%s\n", v->in_rrdr ? " (in RRDR)" : "");
+            printf(")%s\n", v->in_rrdr ? " (in RRDR)" : "");
         }
     }
-    if (counts[CAT_AMBIGUOUS] == 0) printf("  (none)\n");
+    if (counts[CAT_AMBIGUOUS] == 0) print_none();
 
-    // Summary & Clinical Verdict
-    printf("\n--- SUMMARY ---\n");
-    printf("  Variants found:    %d total\n", vl->count);
-    printf("    Known resistance: %d", counts[CAT_KNOWN]);
+    // Summary: the total, then the count in each section
+    ui_heading("SUMMARY", -1, "");
+    printf("    %-19s%s%d total%s (indels: %d)\n", "Variants found:",
+           ui.bold, vl->count, ui.reset, indel_count);
+    char rule_note[48] = "";
     if (rule_count > 0)
     {
-        printf(" (%d by the WHO RRDR rule)", rule_count);
+        snprintf(rule_note, sizeof(rule_note), "(%d by the WHO RRDR rule)", rule_count);
     }
-    printf("\n");
-    printf("    Unknown RRDR:     %d\n", counts[CAT_RRDR]);
-    printf("    Other variants:   %d\n", counts[CAT_OTHER]);
-    printf("    Synonymous:       %d\n", counts[CAT_SYNONYMOUS]);
-    printf("    Ambiguous codons: %d\n", counts[CAT_AMBIGUOUS]);
-    printf("    (Indels among these: %d)\n", indel_count);
+    print_count("Known resistance:", counts[CAT_KNOWN], ui.red, rule_note);
+    print_count("Unknown RRDR:", counts[CAT_RRDR], ui.yellow, "");
+    print_count("Other variants:", counts[CAT_OTHER], "", "");
+    print_count("Synonymous:", counts[CAT_SYNONYMOUS], "", "");
+    print_count("Ambiguous codons:", counts[CAT_AMBIGUOUS], ui.yellow, "");
     if (vl->unaligned_bases > 0)
     {
-        printf("  Ignored %d patient base(s) outside the aligned region (flanks)\n",
+        printf("\n    Ignored %d patient base(s) outside the aligned region (flanks)\n",
                vl->unaligned_bases);
     }
     if (truncating > 0)
     {
-        printf("  QC WARNING: %d frameshift/premature stop variant(s). rpoB is essential,\n"
-               "  so these usually mean a sequencing or assembly error.\n", truncating);
+        print_warning("QC WARNING:", "%d frameshift/premature stop variant(s).\nrpoB is "
+                      "essential, so these usually mean a sequencing or assembly error.",
+                      truncating);
     }
 
-    printf("\n========================================================\n");
-    printf("  VERDICT: ");
+    // Verdict: the first rule that applies wins (see the top of this file)
+    const char *verdict;
+    const char *color;
     if (!info->alignment_ok)
     {
-        printf("INCONCLUSIVE - sample does not align well to the rpoB reference\n");
+        verdict = "INCONCLUSIVE - sample does not align well to the rpoB reference";
+        color = ui.yellow;
     }
     else if (counts[CAT_KNOWN] > 0)
     {
-        printf("RIFAMPICIN RESISTANCE-ASSOCIATED MUTATION DETECTED\n");
+        verdict = "RIFAMPICIN RESISTANCE-ASSOCIATED MUTATION DETECTED";
+        color = ui.red;
     }
     else if (counts[CAT_RRDR] > 0)
     {
-        printf("UNCHARACTERIZED RRDR VARIANT - phenotypic testing advised\n");
+        verdict = "UNCHARACTERIZED RRDR VARIANT - phenotypic testing advised";
+        color = ui.yellow;
     }
     else if (info->rrdr_resolved < RRDR_LENGTH_BP)
     {
-        printf("INCONCLUSIVE - RRDR not fully covered or contains ambiguous bases\n");
+        verdict = "INCONCLUSIVE - RRDR not fully covered or contains ambiguous bases";
+        color = ui.yellow;
     }
     else
     {
-        printf("No known resistance mutation detected in RRDR\n");
+        verdict = "No known resistance mutation detected in RRDR";
+        color = ui.green;
     }
-    printf("========================================================\n");
 
-    printf("\n  DISCLAIMER: Research and educational use only.\n");
-    printf("  Not validated for standalone clinical diagnostics.\n");
-    printf("  A negative result does not rule out rifampicin resistance: mutations\n");
-    printf("  outside the sequenced region, minority populations hidden in a\n");
-    printf("  consensus sequence and non-rpoB mechanisms are not detected.\n\n");
+    // The verdict line itself stays "  VERDICT: ..." so scripts can find it
+    printf("\n\n");
+    ui_rule("━", color);
+    printf("\n  %sVERDICT:%s %s%s%s%s\n\n", ui.bold, ui.reset, ui.bold, color, verdict, ui.reset);
+    ui_rule("━", color);
+
+    ui_heading("DISCLAIMER", -1, "");
+    printf("    ");
+    ui_wrap("Research and educational use only. Not validated for standalone "
+            "clinical diagnostics. A negative result does not rule out rifampicin "
+            "resistance: mutations outside the sequenced region, minority "
+            "populations hidden in a consensus sequence and non-rpoB mechanisms "
+            "are not detected.", 4);
+    printf("\n");
 }
