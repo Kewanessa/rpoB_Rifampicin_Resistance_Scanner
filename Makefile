@@ -12,8 +12,8 @@ TARGET = amr_scan
 ASAN_TARGET = amr_scan_asan
 
 # Source files and their object files
-SRCS = main.c fasta.c align.c translate.c variants.c mutdb.c report.c
-HDRS = fasta.h align.h translate.h variants.h mutdb.h report.h
+SRCS = main.c fasta.c align.c translate.c variants.c mutdb.c report.c ui.c
+HDRS = fasta.h align.h translate.h variants.h mutdb.h report.h ui.h
 OBJS = $(SRCS:.c=.o)
 
 # Default target: build the program
@@ -26,13 +26,14 @@ $(TARGET): $(OBJS)
 
 # Dependencies (which headers each .c needs, including headers that
 # those headers include: variants.h includes mutdb.h, report.h includes both)
-main.o: main.c fasta.h align.h translate.h variants.h mutdb.h report.h
+main.o: main.c fasta.h align.h translate.h variants.h mutdb.h report.h ui.h
 fasta.o: fasta.c fasta.h
 align.o: align.c align.h
 translate.o: translate.c translate.h
 variants.o: variants.c variants.h mutdb.h translate.h
-mutdb.o: mutdb.c mutdb.h
-report.o: report.c report.h variants.h mutdb.h
+mutdb.o: mutdb.c mutdb.h ui.h
+report.o: report.c report.h variants.h mutdb.h ui.h
+ui.o: ui.c ui.h
 
 # Clean up compiled files
 clean:

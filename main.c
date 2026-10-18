@@ -31,6 +31,12 @@
 #include "variants.h"
 #include "mutdb.h"
 #include "report.h"
+#include "ui.h"
+
+#define VERSION "1.1.0"
+
+// Steps shown in the progress log while the scan runs
+#define NUM_STEPS 6
 
 // An alignment is trusted only if the patient matches the reference
 // closely (M. tuberculosis rpoB is >99% identical to H37Rv) over at
@@ -122,13 +128,16 @@ int main(int argc, char *argv[])
         printf("  patient.fasta    DNA sequence from patient isolate (full gene or RRDR fragment,\n");
         printf("                   either strand)\n");
         printf("  reference.fasta  H37Rv rpoB reference (Rv0667, NC_000962.3:759807-763325)\n");
-        printf("  mutations.tsv    Mutation database (tab-separated, WHO 2023 catalogue)\n");
+        printf("  mutations.tsv    Mutation database (tab-separated, WHO 2023 catalogue)\n\n");
+        printf("Environment:\n");
+        printf("  NO_COLOR         set to any value to turn off coloured output\n");
+        printf("                   (colour is only used when writing to a terminal)\n");
         return 0;
     }
 
     if (argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0))
     {
-        printf("rpoB Rifampicin Resistance Scanner version 1.1.0\n");
+        printf("rpoB Rifampicin Resistance Scanner version %s\n", VERSION);
         printf("Author: kewanessa (CS50 Final Project)\n");
         return 0;
     }
@@ -148,26 +157,35 @@ int main(int argc, char *argv[])
     const char *reference_file = argv[2];
     const char *mutations_file = argv[3];
 
-    // Step 1: Parse the FASTA files
-    printf("Reading patient sequence from '%s'...\n", patient_file);
+    // Each step below gets a numbered heading, with its details indented
+    // under it, so progress is easy to follow while the scan runs
+    ui_init();
+    ui_banner("rpoB Rifampicin Resistance Scanner", VERSION);
+
+    // Steps 1-2: Parse the FASTA files
+    ui_step(1, NUM_STEPS, "Reading patient sequence");
+    ui_detail("File", "%s", patient_file);
     FastaRecord *patient = read_fasta(patient_file);
     if (patient == NULL)
     {
         return 1;
     }
-    printf("  → ID: %s\n  → Length: %d bp\n", patient->id, patient->length);
+    ui_detail("ID", "%s", patient->id);
+    ui_detail("Length", "%d bp", patient->length);
 
-    printf("Reading reference sequence from '%s'...\n", reference_file);
+    ui_step(2, NUM_STEPS, "Reading reference sequence");
+    ui_detail("File", "%s", reference_file);
     FastaRecord *reference = read_fasta(reference_file);
     if (reference == NULL)
     {
         free_fasta_record(patient);
         return 1;
     }
-    printf("  → ID: %s\n  → Length: %d bp\n", reference->id, reference->length);
+    ui_detail("ID", "%s", reference->id);
+    ui_detail("Length", "%d bp", reference->length);
 
-    // Step 2: Translate the reference to protein (for DB validation)
-    printf("Translating reference to protein...\n");
+    // Step 3: Translate the reference to protein (for DB validation)
+    ui_step(3, NUM_STEPS, "Translating reference to protein");
     char *ref_protein = translate_sequence(reference->sequence, reference->length);
     if (ref_protein == NULL)
     {
@@ -193,10 +211,12 @@ int main(int argc, char *argv[])
     int protein_len = strlen(ref_protein) - 1;
     ref_protein[protein_len] = '\0';
 
-    printf("  → Protein length: %d aa\n", protein_len);
+    ui_detail("Protein", "%d aa", protein_len);
+    ui_detail("Check", "%s✓%s complete gene (start codon to stop codon)", ui.green, ui.reset);
 
-    // Step 3: Load and validate the mutation database
-    printf("Loading mutation database from '%s'...\n", mutations_file);
+    // Step 4: Load and validate the mutation database
+    ui_step(4, NUM_STEPS, "Loading mutation database");
+    ui_detail("File", "%s", mutations_file);
     MutDB *db = load_mutdb(mutations_file);
     if (db == NULL)
     {
@@ -205,6 +225,7 @@ int main(int argc, char *argv[])
         free_fasta_record(reference);
         return 1;
     }
+    ui_detail("Entries", "%d mutation(s) loaded", db->count);
 
     // Self-check: every database entry must match the reference. A mismatch
     // means the wrong numbering system (e.g. E. coli) or the wrong reference,
@@ -221,11 +242,12 @@ int main(int argc, char *argv[])
         free_fasta_record(reference);
         return 1;
     }
+    ui_detail("Validation", "%s✓%s all entries match the reference protein", ui.green, ui.reset);
 
-    // Step 4: Align the sequences
-    printf("Aligning sequences (%d bp vs %d bp)...\n",
-           patient->length, reference->length);
-    printf("  (this may take a moment for full-length genes)\n");
+    // Step 5: Align the sequences
+    ui_step(5, NUM_STEPS, "Aligning patient to reference");
+    ui_detail("Method", "Needleman-Wunsch, %d bp vs %d bp", patient->length, reference->length);
+    ui_note("This may take a moment for full-length genes...");
 
     AlignResult *aln = align_sequences(reference->sequence, reference->length,
                                        patient->sequence, patient->length);
@@ -262,7 +284,6 @@ int main(int argc, char *argv[])
                                                  rc_aln->length);
             if (alignment_is_reliable(rc_identity, rc_aligned, patient->length))
             {
-                printf("  → Sample matches the opposite strand: using its reverse complement\n");
                 free_align_result(aln);
                 aln = rc_aln;
                 identity = rc_identity;
@@ -276,10 +297,18 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("  → Alignment length: %d columns, score: %d\n", aln->length, aln->score);
+    if (reversed)
+    {
+        ui_detail("Strand", "reverse complement (auto-detected)");
+    }
+    else
+    {
+        ui_detail("Strand", "forward");
+    }
+    ui_detail("Alignment", "%d columns, score %d", aln->length, aln->score);
 
-    // Step 5: Call variants
-    printf("Calling variants...\n");
+    // Step 6: Call variants
+    ui_step(6, NUM_STEPS, "Calling variants");
     VariantList *variants = call_variants(aln->ref_aligned, aln->qry_aligned, aln->length, db);
     if (variants == NULL)
     {
@@ -291,8 +320,9 @@ int main(int argc, char *argv[])
         free_fasta_record(reference);
         return 1;
     }
+    ui_detail("Found", "%d variant(s)", variants->count);
 
-    // Step 6: Print the report
+    // Print the report
     ReportInfo info;
     info.sample_id = patient->id;
     info.ref_id = reference->id;
@@ -304,7 +334,7 @@ int main(int argc, char *argv[])
     info.rrdr_resolved = count_rrdr_resolved(aln->ref_aligned, aln->qry_aligned, aln->length);
     print_report(&info, variants);
 
-    // Step 7: Clean up all memory
+    // Clean up all memory
     free(ref_protein);
     free_variant_list(variants);
     free_align_result(aln);

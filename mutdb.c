@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "mutdb.h"
+#include "ui.h"
 
 #define MAX_LINE 1024
 
@@ -232,7 +233,7 @@ MutDB *load_mutdb(const char *filename)
 
     if (other_genes > 0)
     {
-        printf("Note: skipped %d entries for genes other than rpoB\n", other_genes);
+        ui_detail("Note", "skipped %d entries for genes other than rpoB", other_genes);
     }
 
     // An empty database would make every sample look susceptible
@@ -243,7 +244,6 @@ MutDB *load_mutdb(const char *filename)
         return NULL;
     }
 
-    printf("Loaded %d mutation(s) from database\n", db->count);
     return db;
 }
 
@@ -307,11 +307,7 @@ int validate_mutdb(MutDB *db, const char *ref_protein, int protein_len)
         }
     }
 
-    if (mismatches == 0)
-    {
-        printf("Database validation: all entries match the reference protein ✓\n");
-    }
-    else
+    if (mismatches > 0)
     {
         fprintf(stderr, "Database validation: %d mismatch(es) found — check numbering!\n", mismatches);
     }

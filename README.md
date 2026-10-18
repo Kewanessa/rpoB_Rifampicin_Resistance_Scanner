@@ -16,7 +16,7 @@ About 95% of rifampicin resistance comes from mutations in an 81 bp stretch of *
 
 ```bash
 make             # build ./amr_scan
-make test        # run the 33-test suite
+make test        # run the 34-test suite
 make asan        # run the tests under AddressSanitizer and UndefinedBehaviorSanitizer
 make valgrind    # check for memory leaks
 
@@ -24,21 +24,29 @@ make valgrind    # check for memory leaks
 ./amr_scan tests/test_S450L.fasta ncbi_data/ncbi_dataset/data/gene.fna mutations.tsv
 ```
 
-Part of the report for that sample:
+Each of the six pipeline steps gets a numbered heading as it runs, then the report follows in sections, each with a count at the right margin. Part of the output for that sample:
 
 ```
-  Strand:         forward
-  Identity:       99.97%
-  RRDR Coverage:  Complete (81/81 bp)
-
---- KNOWN RESISTANCE-ASSOCIATED MUTATIONS ---
-  * S450L (TCG -> TTG, c.1349C>T) - Associated with resistance
-    Source: WHO 2023
+  [5/6] Aligning patient to reference
+        Method      Needleman-Wunsch, 3519 bp vs 3519 bp
+        This may take a moment for full-length genes...
+        Strand      forward
+        Alignment   3519 columns, score 3517
+  ...
+  KNOWN RESISTANCE-ASSOCIATED MUTATIONS                                1
+  ──────────────────────────────────────────────────────────────────────
+    • S450L (TCG -> TTG, c.1349C>T)
+      Associated with resistance
+      Source: WHO 2023
+  ...
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   VERDICT: RIFAMPICIN RESISTANCE-ASSOCIATED MUTATION DETECTED
+
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-The program exits with code 0 when it prints a report and 1 on any error (missing file, invalid FASTA, bad database, wrong reference).
+In a terminal the verdict is coloured red (resistance), yellow (uncharacterized or inconclusive) or green (no known resistance). Redirected or piped output is plain text, and `NO_COLOR=1` turns colour off everywhere. The program exits with code 0 when it prints a report and 1 on any error (missing file, invalid FASTA, bad database, wrong reference).
 
 ## Files and design choices
 
@@ -66,13 +74,15 @@ The program exits with code 0 when it prints a report and 1 on any error (missin
 
 The second row follows WHO's 2023 rule that any non-silent RRDR mutation confers resistance unless there is evidence to the contrary, such as a database entry graded "not associated with resistance". Nonsense and frameshift changes stay "uncharacterized": *rpoB* is essential, so they usually mean a sequencing error, and the report adds a QC warning. A mixed base call such as Y (C or T) at codon 450 could hide S450L, so ambiguous RRDR bases make the result inconclusive rather than negative.
 
+**`ui.c` / `ui.h`** hold the shared terminal layout: numbered step headings, aligned "label value" fields, section headings with rules, and word wrapping that keeps long values within 72 columns. They turn on colour only when stdout is a terminal and `NO_COLOR` is not set, and they flush each step heading at once, so progress shows even through a pipe. The verdict line always reads `  VERDICT: ...`, so scripts can still find it.
+
 **`mutations.tsv`** lists the 103 *rpoB* missense mutations that the WHO 2023 catalogue grades group 1 (23) or group 2 (80), in *M. tuberculosis* numbering. **`tools/extract_who_rpoB.py`** rebuilds it from the official WHO Excel file with only the Python standard library, so every row can be traced to its source.
 
 **`ncbi_data/`** holds the H37Rv *rpoB* reference gene and protein as downloaded from NCBI, with checksums.
 
 **`Makefile`** builds with strict flags (`-Wall -Wextra -Werror -std=c11`) and provides the test, sanitizer and Valgrind targets.
 
-**`tests/`** holds `run_tests.sh` and the FASTA and database files it uses. Each of the 33 tests checks the exit code, the exact verdict and key report lines. They cover known mutations (S450L, H445Y, D435V, D435F, a double mutant, I491F outside the RRDR), in-frame and frameshift indels, amplicons, a reverse-strand read, lowercase input with Windows line endings, flanking DNA, synonymous and nonsense changes, Ns and mixed bases in the RRDR, unrelated DNA, and error cases such as an empty or malformed file, an *E. coli*-numbered database and a reference that is not a whole gene. All tests pass with the normal build and under the sanitizers, and Valgrind reports no leaks.
+**`tests/`** holds `run_tests.sh` and the FASTA and database files it uses. Each of the 34 tests checks the exit code, the exact verdict and key report lines. They cover known mutations (S450L, H445Y, D435V, D435F, a double mutant, I491F outside the RRDR), in-frame and frameshift indels, amplicons, a reverse-strand read, lowercase input with Windows line endings, flanking DNA, synonymous and nonsense changes, Ns and mixed bases in the RRDR, unrelated DNA, plain-text output when piped, and error cases such as an empty or malformed file, an *E. coli*-numbered database and a reference that is not a whole gene. All tests pass with the normal build and under the sanitizers, and Valgrind reports no leaks.
 
 ## Data sources
 
@@ -88,7 +98,7 @@ The second row follows WHO's 2023 rule that any non-silent RRDR mutation confers
 
 ## AI assistance
 
-In line with CS50's academic honesty policy, I disclose that Anthropic's Claude (through Claude Code) helped during the final review of this project. It reviewed the code for bugs and helped fix the ones it found (indels split into frameshifts by the traceback, ambiguous RRDR bases, flanking DNA reported as insertions, an out-of-bounds read, database validation and parsing, and "not associated" database grades in the RRDR); wrote `tools/extract_who_rpoB.py` to rebuild `mutations.tsv` from the WHO catalogue; extended the test suite; and helped revise and shorten this README. Source files touched by this work say so in their header comment.
+In line with CS50's academic honesty policy, I disclose that Anthropic's Claude (through Claude Code) helped during the final review of this project. It reviewed the code for bugs and helped fix the ones it found (indels split into frameshifts by the traceback, ambiguous RRDR bases, flanking DNA reported as insertions, an out-of-bounds read, database validation and parsing, and "not associated" database grades in the RRDR); wrote `tools/extract_who_rpoB.py` to rebuild `mutations.tsv` from the WHO catalogue; redesigned the terminal output (numbered progress steps, the sectioned report layout and colour) and wrote `ui.c` / `ui.h` for it; extended the test suite; and helped revise and shorten this README. Source files touched by this work say so in their header comment.
 
 ## License and references
 

@@ -172,69 +172,75 @@ run_test "Wild type (no mutations)" \
 
 run_test "S450L mutation (most common)" \
     "$TESTS_DIR/test_S450L.fasta" "$RESISTANT" \
-    "* S450L (TCG -> TTG, c.1349C>T) - Associated with resistance" \
+    "• S450L (TCG -> TTG, c.1349C>T)" \
+    "Associated with resistance" \
     "Known resistance: 1"
 
 run_test "H445Y mutation" \
     "$TESTS_DIR/test_H445Y.fasta" "$RESISTANT" \
-    "* H445Y (CAC -> TAC, c.1333C>T) - Associated with resistance"
+    "• H445Y (CAC -> TAC, c.1333C>T)" \
+    "Associated with resistance"
 
 run_test "D435V mutation" \
     "$TESTS_DIR/test_D435V.fasta" "$RESISTANT" \
-    "* D435V (GAC -> GTC, c.1304A>T) - Associated with resistance"
+    "• D435V (GAC -> GTC, c.1304A>T)" \
+    "Associated with resistance"
 
 run_test "D435F (two bases changed in one codon)" \
     "$TESTS_DIR/test_D435F.fasta" "$RESISTANT" \
-    "* D435F (GAC -> TTC, c.1303_1304delinsTT) - Associated with resistance"
+    "• D435F (GAC -> TTC, c.1303_1304delinsTT)" \
+    "Associated with resistance"
 
 run_test "Double mutation (S450L + H445Y)" \
     "$TESTS_DIR/test_double.fasta" "$RESISTANT" \
-    "* H445Y (CAC -> TAC, c.1333C>T)" \
-    "* S450L (TCG -> TTG, c.1349C>T)" \
+    "• H445Y (CAC -> TAC, c.1333C>T)" \
+    "• S450L (TCG -> TTG, c.1349C>T)" \
     "Known resistance: 2"
 
 run_test "I491F outside the RRDR (WHO borderline)" \
     "$TESTS_DIR/test_I491F.fasta" "$RESISTANT" \
-    "* I491F (ATC -> TTC, c.1471A>T) - Associated with resistance (outside RRDR)" \
+    "• I491F (ATC -> TTC, c.1471A>T)" \
+    "Associated with resistance (outside RRDR)" \
     "Source: WHO 2023; borderline"
 
 run_test "In-frame deletion in RRDR (p.Asp435del)" \
     "$TESTS_DIR/test_deletion.fasta" "$RESISTANT" \
-    "* In-frame deletion at codon 435: c.1303_1305delGAC (3 bp)" \
+    "• In-frame deletion at codon 435: c.1303_1305delGAC (3 bp)" \
+    "Associated with resistance (interim)" \
     "Source: WHO 2023 additional grading rule" \
     "!Frameshift"
 
 run_test "In-frame insertion in RRDR" \
     "$TESTS_DIR/test_insertion.fasta" "$RESISTANT" \
-    "* In-frame insertion at codon 435: c.1302_1303insGCC (3 bp)" \
+    "• In-frame insertion at codon 435: c.1302_1303insGCC (3 bp)" \
     "!Frameshift"
 
 run_test "RRDR amplicon carrying S450L" \
     "$TESTS_DIR/test_fragment_S450L.fasta" "$RESISTANT" \
-    "* S450L (TCG -> TTG, c.1349C>T)" \
+    "• S450L (TCG -> TTG, c.1349C>T)" \
     "Sequenced Span: bp 1201 - 1400"
 
 run_test "Reverse-strand read (S450L)" \
     "$TESTS_DIR/test_revcomp_S450L.fasta" "$RESISTANT" \
     "Strand:         reverse complement (auto-detected)" \
-    "* S450L (TCG -> TTG, c.1349C>T)"
+    "• S450L (TCG -> TTG, c.1349C>T)"
 
 run_test "Lowercase, Windows line endings, no header" \
     "$TESTS_DIR/test_lowercase_crlf.fasta" "$RESISTANT" \
     "Sample:         test_lowercase_crlf.fasta" \
-    "* S450L (TCG -> TTG, c.1349C>T)"
+    "• S450L (TCG -> TTG, c.1349C>T)"
 
 echo ""
 echo "No resistance, uncharacterized and inconclusive results"
 
 run_test "Synonymous change (no AA change)" \
     "$TESTS_DIR/test_synonymous.fasta" "$NEGATIVE" \
-    "* c.600G>T (codon 200 CCG -> CCT, aa=P unchanged)" \
+    "• c.600G>T (codon 200 CCG -> CCT, aa=P unchanged)" \
     "Synonymous:       1"
 
 run_test "Synonymous mutation inside RRDR" \
     "$TESTS_DIR/test_rrdr_silent.fasta" "$NEGATIVE" \
-    "* c.1299C>T (codon 433 TTC -> TTT, aa=F unchanged) (in RRDR)"
+    "• c.1299C>T (codon 433 TTC -> TTT, aa=F unchanged) (in RRDR)"
 
 run_test "RRDR fragment input" \
     "$TESTS_DIR/test_rrdr_fragment.fasta" "$NEGATIVE" \
@@ -252,28 +258,31 @@ run_test "Flanking DNA around the gene is ignored" \
 DB="$TESTS_DIR/db_not_associated.tsv"
 run_test "RRDR mutation graded 'not associated' in the database" \
     "$TESTS_DIR/test_H445Y.fasta" "$NEGATIVE" \
-    "* H445Y (CAC -> TAC, c.1333C>T) (database: Not associated with resistance) (in RRDR)" \
+    "• H445Y (CAC -> TAC, c.1333C>T) (in RRDR)" \
+    "Database: Not associated with resistance" \
     "Known resistance: 0" \
     "Unknown RRDR:     0"
 DB="mutations.tsv"
 
 run_test "Nonsense mutation in RRDR (S450*)" \
     "$TESTS_DIR/test_nonsense.fasta" "$UNCHARACTERIZED" \
-    "* S450* (TCG -> TAG, c.1349C>A) - significance unknown" \
+    "• S450* (TCG -> TAG, c.1349C>A)" \
+    "Significance unknown" \
     "QC WARNING"
 
 run_test "Frameshift deletion in RRDR" \
     "$TESTS_DIR/test_frameshift.fasta" "$UNCHARACTERIZED" \
-    "* Frameshift deletion at codon 447: c.1341delC (1 bp)"
+    "• Frameshift deletion at codon 447: c.1341delC (1 bp)" \
+    "Significance unknown, reading frame disrupted"
 
 run_test "Ns in RRDR (inconclusive)" \
     "$TESTS_DIR/test_rrdr_ns.fasta" "$INCOMPLETE" \
-    "* codon 440 (CTG -> NNN" \
+    "• codon 440 (CTG -> NNN" \
     "RRDR Coverage:  INCOMPLETE (78/81 bp resolved)"
 
 run_test "Mixed base call at S450 (C/T = Y)" \
     "$TESTS_DIR/test_hetero_S450.fasta" "$INCOMPLETE" \
-    "* codon 450 (TCG -> TYG, c.1349C>Y) - amino acid cannot be determined (in RRDR)"
+    "• codon 450 (TCG -> TYG, c.1349C>Y) (in RRDR)"
 
 run_test "Fragment that misses the RRDR" \
     "$TESTS_DIR/test_no_rrdr.fasta" "$INCOMPLETE" \
@@ -286,6 +295,17 @@ run_test "Unrelated DNA" \
 run_test "Sequence made only of Ns" \
     "$TESTS_DIR/test_all_n.fasta" "$POOR_ALIGNMENT" \
     "Sequenced Span: none"
+
+echo ""
+echo "Progress log and report layout"
+
+# Output captured by a script is not a terminal, so it must be plain
+# text: no colour escape codes (ESC = \033)
+run_test "Numbered progress steps, plain text when piped" \
+    "$TESTS_DIR/test_S450L.fasta" "$RESISTANT" \
+    "[1/6] Reading patient sequence" \
+    "[6/6] Calling variants" \
+    "!"$'\033'
 
 echo ""
 echo "Error handling"
